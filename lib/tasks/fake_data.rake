@@ -1,7 +1,8 @@
 class FakeDataGenerator
-  def initialize(users_count, stories_count)
+  def initialize(users_count, stories_count, comments_count)
     @users_count = users_count
     @stories_count = stories_count
+    @comments_count = comments_count
   end
 
   def generate
@@ -15,11 +16,20 @@ class FakeDataGenerator
         username: user_name
     end
 
-    @stories_count.times do
+    stories = 0.upto(@stories_count).map do |i|
       user = users[Random.rand(users.length-1)]
       title = Faker::Lorem.sentence(3)
       tag = Tag.find_or_create_by! tag: title.split(' ').first.downcase
       Story.create! user: user, title: title, url: Faker::Internet.url, tags_a: [tag.tag]
+    end
+
+    @comments_count.times do
+      user = users[Random.rand(users.length-1)]
+      story = stories[Random.rand(stories.length-1)]
+      comment_body = Faker::Lorem.sentence(4)
+      Comment.create! comment: comment_body,
+        user: user,
+        story: story
     end
   end
 end
@@ -27,7 +37,7 @@ end
 desc 'Generates fake data for testing purposes'
 task fake_data: :environment do
   fail "It's not intended to be run outside development environment" unless Rails.env.development?
-  unless (User.count + Tag.count + Story.count) == 0
+  unless (User.count + Tag.count + Story.count + Comment.count) == 0
     fail "Please ensure that you're running it on clean database because it will destroy all data"
   end
 
@@ -35,5 +45,5 @@ task fake_data: :environment do
   Tag.destroy_all
   Story.destroy_all
 
-  FakeDataGenerator.new(10, 1_000).generate
+  FakeDataGenerator.new(10, 1_000, 5_000).generate
 end
